@@ -8,7 +8,7 @@
 - ✅ 支持百度地图和高德地图
 - ✅ 基于 MCP (Model Context Protocol) 实现
 - ✅ 使用 Playwright 进行浏览器自动化
-- ✅ 集成 Claude AI 进行智能指令解析
+- ✅ 集成七牛云 AI 服务进行智能指令解析
 
 ## 系统要求
 
@@ -48,10 +48,10 @@ playwright install chromium
 
 ### 5. 配置 API Key
 
-创建 `.env` 文件并添加你的 Anthropic API Key:
+创建 `.env` 文件并添加你的七牛云 API Key:
 
 ```bash
-echo "ANTHROPIC_API_KEY=your-api-key-here" > .env
+echo "OPENAI_API_KEY=your-qiniu-api-key-here" > .env
 ```
 
 ## 使用方法
@@ -133,17 +133,18 @@ python mcp_server.py
 
 - `mcp`: Model Context Protocol SDK
 - `playwright`: 浏览器自动化框架
-- `anthropic`: Claude AI SDK
+- `openai`: OpenAI SDK (用于连接七牛云 AI 服务)
 - `SpeechRecognition`: 语音识别库
 - `PyAudio`: 音频处理库
 - `python-dotenv`: 环境变量管理
 
 ## 注意事项
 
-1. **API Key**: 需要有效的 Anthropic API Key
-2. **网络连接**: 需要访问百度地图/高德地图
+1. **API Key**: 需要有效的七牛云 API Key (配置在 OPENAI_API_KEY 环境变量中)
+2. **网络连接**: 需要访问七牛云 AI 服务 (https://openai.qiniu.com) 和百度地图/高德地图
 3. **语音识别**: 使用 Google 语音识别服务，需要网络连接
 4. **浏览器**: 首次运行会自动下载 Chromium 浏览器
+5. **AI 模型**: 使用七牛云提供的 deepseek/deepseek-v3.1-terminus 模型
 
 ## 故障排除
 
@@ -164,8 +165,8 @@ playwright install chromium
 ### API 调用失败
 
 检查:
-- `.env` 文件中的 API Key 是否正确
-- 网络连接是否正常
+- `.env` 文件中的 API Key 是否正确 (七牛云 API Key)
+- 网络连接是否正常，能否访问 https://openai.qiniu.com
 - API 额度是否充足
 
 ## 开发说明
