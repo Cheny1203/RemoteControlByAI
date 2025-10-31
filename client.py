@@ -1,6 +1,6 @@
 import asyncio
 import os
-from anthropic import Anthropic
+from openai import OpenAI
 from dotenv import load_dotenv
 import speech_recognition as sr
 
@@ -8,11 +8,14 @@ load_dotenv()
 
 class MapNavigationClient:
     def __init__(self):
-        api_key = os.getenv("ANTHROPIC_API_KEY")
+        api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("请设置 ANTHROPIC_API_KEY 环境变量")
+            raise ValueError("请设置 OPENAI_API_KEY 环境变量")
         
-        self.client = Anthropic(api_key=api_key)
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://openai.qiniu.com/v1"
+        )
         self.recognizer = sr.Recognizer()
         
     def get_voice_input(self) -> str:
@@ -59,6 +62,10 @@ class MapNavigationClient:
 
         messages = [
             {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
                 "role": "user",
                 "content": user_input
             }
@@ -66,24 +73,23 @@ class MapNavigationClient:
         
         print("\n开始与AI交互...")
         
-        response = self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=4096,
+        response = self.client.chat.completions.create(
+            model="deepseek/deepseek-v3.1-terminus",
             messages=messages,
             tools=[
-                {
+                {"type": "function", "function": {
                     "name": "open_browser",
                     "description": "打开浏览器并准备导航",
-                    "input_schema": {
+                    "parameters": {
                         "type": "object",
                         "properties": {},
                         "required": []
                     }
-                },
-                {
+                }},
+                {"type": "function", "function": {
                     "name": map_tool,
                     "description": f"在{'百度' if map_type == 'baidu' else '高德'}地图中设置从起点到终点的导航路线",
-                    "input_schema": {
+                    "parameters": {
                         "type": "object",
                         "properties": {
                             "start_location": {
@@ -97,40 +103,41 @@ class MapNavigationClient:
                         },
                         "required": ["start_location", "end_location"]
                     }
-                },
-                {
+                }},
+                {"type": "function", "function": {
                     "name": "close_browser",
                     "description": "关闭浏览器",
-                    "input_schema": {
+                    "parameters": {
                         "type": "object",
                         "properties": {},
                         "required": []
                     }
-                }
-            ],
-            system=system_prompt
+                }}
+            ]
         )
         
-        print(f"\nAI响应: {response.content}")
+        message = response.choices[0].message
+        print(f"\nAI响应: {message.content}")
         
-        if response.stop_reason == "tool_use":
-            for block in response.content:
-                if block.type == "tool_use":
-                    print(f"\n执行工具: {block.name}")
-                    print(f"参数: {block.input}")
-                    
-                    if block.name == "open_browser":
-                        await self.simulate_open_browser()
-                    elif block.name in ["navigate_baidu_map", "navigate_gaode_map"]:
-                        await self.simulate_navigate(
-                            block.input["start_location"],
-                            block.input["end_location"],
-                            map_type
-                        )
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                function_name = tool_call.function.name
+                function_args = eval(tool_call.function.arguments)
+                
+                print(f"\n执行工具: {function_name}")
+                print(f"参数: {function_args}")
+                
+                if function_name == "open_browser":
+                    await self.simulate_open_browser()
+                elif function_name in ["navigate_baidu_map", "navigate_gaode_map"]:
+                    await self.simulate_navigate(
+                        function_args["start_location"],
+                        function_args["end_location"],
+                        map_type
+                    )
         
-        for block in response.content:
-            if hasattr(block, "text"):
-                print(f"\nAI说: {block.text}")
+        if message.content:
+            print(f"\nAI说: {message.content}")
     
     async def simulate_open_browser(self):
         print("→ 模拟: 打开浏览器")
