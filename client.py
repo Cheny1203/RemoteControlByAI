@@ -206,8 +206,14 @@ class MapNavigationClient:
             if not user_input:
                 continue
             
-            map_choice = input("选择地图 [baidu/gaode, 默认百度]: ").strip().lower()
-            map_type = "gaode" if map_choice == "gaode" else "baidu"
+            map_choice = input("选择地图 [baidu/gaode, 直接回车默认百度]: ").strip().lower()
+            if not map_choice:
+                map_type = "baidu"
+                print("→ 使用默认地图: 百度地图")
+            elif map_choice == "gaode":
+                map_type = "gaode"
+            else:
+                map_type = "baidu"
             
             await self.process_navigation_request(user_input, map_type)
 
