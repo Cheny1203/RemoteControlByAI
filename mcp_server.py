@@ -106,17 +106,45 @@ class MapNavigationServer:
         try:
             if not self.page:
                 return [TextContent(type="text", text="请先打开浏览器")]
-            
+
             start_encoded = urllib.parse.quote(start)
             end_encoded = urllib.parse.quote(end)
-            url = f"https://map.baidu.com/?newmap=1&s=s%26wd%3D{end_encoded}&da_src=shareurl&tn=B_NORMAL_MAP&c=340&src=0&pn=0&sug=0&l=12&b=(13250000,3550000;13790000,3950000)&from=webmap&biz_forward=%7B%22scaler%22:1,%22styles%22:%22pl%22%7D&device_ratio=1#panoid=09002200011910291525530005U&panotype=street&heading=334.99&pitch=0&l=19&tn=B_NORMAL_MAP&sc=0&newmap=1&shareurl=1&pid=09002200011910291525530005U"
-            
-            baidu_dir_url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=driving&route_traffic=1"
-            
+
+            # 使用公共交通模式 (mode=transit) 并自动开始导航
+            # sy=0 表示公共交通优先，mode=transit 表示公交地铁模式
+            baidu_dir_url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=transit&sy=0&route_traffic=1"
+
             await self.page.goto(baidu_dir_url)
             await self.page.wait_for_timeout(3000)
-            
-            return [TextContent(type="text", text=f"已在百度地图中设置导航: {start} → {end}")]
+
+            # 自动点击开始导航按钮（如果存在）
+            try:
+                # 等待页面加载完成
+                await self.page.wait_for_timeout(2000)
+
+                # 尝试点击"开始导航"或类似按钮
+                # 百度地图的导航按钮可能有多种选择器
+                start_nav_selectors = [
+                    'text=开始导航',
+                    'text=导航',
+                    '[class*="start-nav"]',
+                    '[class*="start-guide"]'
+                ]
+
+                for selector in start_nav_selectors:
+                    try:
+                        element = await self.page.wait_for_selector(selector, timeout=2000)
+                        if element:
+                            await element.click()
+                            break
+                    except:
+                        continue
+
+            except Exception as e:
+                # 如果自动点击失败，只是记录，不影响主流程
+                pass
+
+            return [TextContent(type="text", text=f"已在百度地图中设置公共交通导航: {start} → {end}")]
         except Exception as e:
             return [TextContent(type="text", text=f"百度地图导航失败: {str(e)}")]
     
@@ -124,15 +152,44 @@ class MapNavigationServer:
         try:
             if not self.page:
                 return [TextContent(type="text", text="请先打开浏览器")]
-            
+
             start_encoded = urllib.parse.quote(start)
             end_encoded = urllib.parse.quote(end)
-            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=car&policy=1"
-            
+
+            # 使用公共交通模式 (type=bus) 代替驾车模式 (type=car)
+            # policy=1 表示推荐路线
+            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=bus&policy=1"
+
             await self.page.goto(url)
             await self.page.wait_for_timeout(3000)
-            
-            return [TextContent(type="text", text=f"已在高德地图中设置导航: {start} → {end}")]
+
+            # 自动点击开始导航按钮（如果存在）
+            try:
+                # 等待页面加载完成
+                await self.page.wait_for_timeout(2000)
+
+                # 尝试点击"开始导航"或类似按钮
+                start_nav_selectors = [
+                    'text=开始导航',
+                    'text=导航',
+                    '[class*="start-navi"]',
+                    '[class*="route-start"]'
+                ]
+
+                for selector in start_nav_selectors:
+                    try:
+                        element = await self.page.wait_for_selector(selector, timeout=2000)
+                        if element:
+                            await element.click()
+                            break
+                    except:
+                        continue
+
+            except Exception as e:
+                # 如果自动点击失败，只是记录，不影响主流程
+                pass
+
+            return [TextContent(type="text", text=f"已在高德地图中设置公共交通导航: {start} → {end}")]
         except Exception as e:
             return [TextContent(type="text", text=f"高德地图导航失败: {str(e)}")]
     

@@ -155,25 +155,57 @@ class MapNavigationClient:
     
     async def simulate_navigate(self, start: str, end: str, map_type: str):
         import urllib.parse
-        
-        print(f"→ 模拟: 设置 {map_type} 地图导航 {start} → {end}")
-        
+
+        print(f"→ 模拟: 设置 {map_type} 地图公共交通导航 {start} → {end}")
+
         if not hasattr(self, 'page') or not self.page:
             print("错误: 浏览器未打开")
             return
-        
+
         start_encoded = urllib.parse.quote(start)
         end_encoded = urllib.parse.quote(end)
-        
+
         if map_type == "baidu":
-            url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=driving&route_traffic=1"
+            # 使用公共交通模式 (mode=transit) 并自动开始导航
+            # sy=0 表示公共交通优先，mode=transit 表示公交地铁模式
+            url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=transit&sy=0&route_traffic=1"
         else:
-            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=car&policy=1"
-        
+            # 使用公共交通模式 (type=bus) 代替驾车模式 (type=car)
+            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=bus&policy=1"
+
         await self.page.goto(url)
         await self.page.wait_for_timeout(3000)
-        
-        print(f"✓ 已在{map_type}地图中设置导航")
+
+        # 自动点击开始导航按钮（如果存在）
+        try:
+            # 等待页面加载完成
+            await self.page.wait_for_timeout(2000)
+
+            # 尝试点击"开始导航"或类似按钮
+            start_nav_selectors = [
+                'text=开始导航',
+                'text=导航',
+                '[class*="start-nav"]',
+                '[class*="start-guide"]',
+                '[class*="start-navi"]',
+                '[class*="route-start"]'
+            ]
+
+            for selector in start_nav_selectors:
+                try:
+                    element = await self.page.wait_for_selector(selector, timeout=2000)
+                    if element:
+                        await element.click()
+                        print("✓ 已自动点击开始导航")
+                        break
+                except:
+                    continue
+
+        except Exception as e:
+            # 如果自动点击失败，只是记录，不影响主流程
+            pass
+
+        print(f"✓ 已在{map_type}地图中设置公共交通导航")
     
     async def run(self):
         print("=" * 60)
