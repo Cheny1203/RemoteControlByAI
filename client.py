@@ -156,7 +156,7 @@ class MapNavigationClient:
     async def simulate_navigate(self, start: str, end: str, map_type: str):
         import urllib.parse
 
-        print(f"→ 模拟: 设置 {map_type} 地图公共交通导航 {start} → {end}")
+        print(f"→ 模拟: 设置 {map_type} 地图步行导航 {start} → {end}")
 
         if not hasattr(self, 'page') or not self.page:
             print("错误: 浏览器未打开")
@@ -166,12 +166,12 @@ class MapNavigationClient:
         end_encoded = urllib.parse.quote(end)
 
         if map_type == "baidu":
-            # 使用公共交通模式 (mode=transit) 并自动开始导航
-            # sy=0 表示公共交通优先，mode=transit 表示公交地铁模式
-            url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=transit&sy=0&route_traffic=1"
+            # 使用步行模式 (mode=walking)
+            # sn=2 和 en=2 表示自动选择最近的地点，不需要二次点击
+            url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=walking&route_traffic=1"
         else:
-            # 使用公共交通模式 (type=bus) 代替驾车模式 (type=car)
-            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=bus&policy=1"
+            # 使用步行模式 (type=walk)
+            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=walk&policy=1"
 
         await self.page.goto(url)
         await self.page.wait_for_timeout(3000)
@@ -205,7 +205,7 @@ class MapNavigationClient:
             # 如果自动点击失败，只是记录，不影响主流程
             pass
 
-        print(f"✓ 已在{map_type}地图中设置公共交通导航")
+        print(f"✓ 已在{map_type}地图中设置步行导航")
     
     async def run(self):
         print("=" * 60)
