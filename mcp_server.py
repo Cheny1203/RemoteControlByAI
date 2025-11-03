@@ -110,9 +110,9 @@ class MapNavigationServer:
             start_encoded = urllib.parse.quote(start)
             end_encoded = urllib.parse.quote(end)
 
-            # 使用公共交通模式 (mode=transit) 并自动开始导航
-            # sy=0 表示公共交通优先，mode=transit 表示公交地铁模式
-            baidu_dir_url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=transit&sy=0&route_traffic=1"
+            # 使用步行模式 (mode=walking)
+            # sn=2 和 en=2 表示自动选择最近的地点，不需要二次点击
+            baidu_dir_url = f"https://map.baidu.com/dir/{start_encoded}/{end_encoded}/@13520000,3570000,12z?querytype=nav&c=340&sn=2$$$$$$${start_encoded}$$$$$$&en=2$$$$$$${end_encoded}$$$$$$&sq={start_encoded}&eq={end_encoded}&mode=walking&route_traffic=1"
 
             await self.page.goto(baidu_dir_url)
             await self.page.wait_for_timeout(3000)
@@ -144,7 +144,7 @@ class MapNavigationServer:
                 # 如果自动点击失败，只是记录，不影响主流程
                 pass
 
-            return [TextContent(type="text", text=f"已在百度地图中设置公共交通导航: {start} → {end}")]
+            return [TextContent(type="text", text=f"已在百度地图中设置步行导航: {start} → {end}")]
         except Exception as e:
             return [TextContent(type="text", text=f"百度地图导航失败: {str(e)}")]
     
@@ -156,9 +156,9 @@ class MapNavigationServer:
             start_encoded = urllib.parse.quote(start)
             end_encoded = urllib.parse.quote(end)
 
-            # 使用公共交通模式 (type=bus) 代替驾车模式 (type=car)
+            # 使用步行模式 (type=walk)
             # policy=1 表示推荐路线
-            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=bus&policy=1"
+            url = f"https://www.amap.com/dir?from%5Bname%5D={start_encoded}&to%5Bname%5D={end_encoded}&type=walk&policy=1"
 
             await self.page.goto(url)
             await self.page.wait_for_timeout(3000)
@@ -189,7 +189,7 @@ class MapNavigationServer:
                 # 如果自动点击失败，只是记录，不影响主流程
                 pass
 
-            return [TextContent(type="text", text=f"已在高德地图中设置公共交通导航: {start} → {end}")]
+            return [TextContent(type="text", text=f"已在高德地图中设置步行导航: {start} → {end}")]
         except Exception as e:
             return [TextContent(type="text", text=f"高德地图导航失败: {str(e)}")]
     
